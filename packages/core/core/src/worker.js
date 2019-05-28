@@ -1,6 +1,6 @@
 // @flow strict-local
 
-import type {ParcelOptions, AssetRequest, JSONObject} from '@parcel/types';
+import type {ParcelOptions, AssetRequest} from '@parcel/types';
 import type {Bundle} from './types';
 import type BundleGraph from './BundleGraph';
 
@@ -8,38 +8,36 @@ import TransformerRunner from './TransformerRunner';
 import PackagerRunner from './PackagerRunner';
 import Config from './Config';
 
-type Options = {|
+export function init() {}
+
+export function runTransform({
+  request,
+  config,
+  options
+}: {
+  request: AssetRequest,
   config: Config,
-  options: ParcelOptions,
-  env: JSONObject
-|};
-
-let transformerRunner: TransformerRunner | null = null;
-let packagerRunner: PackagerRunner | null = null;
-
-export function init({config, options}: Options) {
-  transformerRunner = new TransformerRunner({
+  options: ParcelOptions
+}) {
+  return new TransformerRunner({
     config,
     options
-  });
-  packagerRunner = new PackagerRunner({
+  }).transform(request);
+}
+
+export function runPackage({
+  bundle,
+  bundleGraph,
+  config,
+  options
+}: {
+  bundle: Bundle,
+  bundleGraph: BundleGraph,
+  config: Config,
+  options: ParcelOptions
+}) {
+  return new PackagerRunner({
     config,
     options
-  });
-}
-
-export function runTransform(req: AssetRequest) {
-  if (!transformerRunner) {
-    throw new Error('.runTransform() called before .init()');
-  }
-
-  return transformerRunner.transform(req);
-}
-
-export function runPackage(bundle: Bundle, bundleGraph: BundleGraph) {
-  if (!packagerRunner) {
-    throw new Error('.runPackage() called before .init()');
-  }
-
-  return packagerRunner.writeBundle(bundle, bundleGraph);
+  }).writeBundle(bundle, bundleGraph);
 }

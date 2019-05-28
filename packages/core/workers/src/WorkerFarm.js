@@ -2,7 +2,6 @@
 
 import type {ErrorWithCode, FilePath, LogEvent} from '@parcel/types';
 import type {
-  BundlerOptions,
   CallRequest,
   WorkerRequest,
   WorkerResponse,
@@ -33,7 +32,7 @@ type FarmOptions = {|
 type HandleFunction = (...args: Array<any>) => Promise<any>;
 
 type WorkerModule = {
-  init(BundlerOptions): void
+  init(): void
 };
 
 /**
@@ -41,7 +40,6 @@ type WorkerModule = {
  */
 
 export default class WorkerFarm extends EventEmitter {
-  bundlerOptions: BundlerOptions;
   callQueue: Array<WorkerCall> = [];
   ending: boolean = false;
   localWorker: WorkerModule;
@@ -50,10 +48,7 @@ export default class WorkerFarm extends EventEmitter {
   warmWorkers: number = 0;
   workers: Map<number, Worker> = new Map();
 
-  constructor(
-    bundlerOptions: BundlerOptions,
-    farmOptions: $Shape<FarmOptions> = {}
-  ) {
+  constructor(farmOptions: $Shape<FarmOptions> = {}) {
     super();
     this.options = {
       maxConcurrentWorkers: WorkerFarm.getNumWorkers(),
@@ -72,7 +67,7 @@ export default class WorkerFarm extends EventEmitter {
     this.localWorker = require(this.options.workerPath);
     this.run = this.mkhandle('run');
 
-    this.init(bundlerOptions);
+    this.init();
   }
 
   warmupWorker(method: string, args: Array<any>): void {
@@ -130,7 +125,7 @@ export default class WorkerFarm extends EventEmitter {
   startChild() {
     let worker = new Worker({forcedKillTime: this.options.forcedKillTime});
 
-    worker.fork(nullthrows(this.options.workerPath), this.bundlerOptions);
+    worker.fork(nullthrows(this.options.workerPath));
 
     worker.on('request', data => this.processRequest(data, worker));
 
@@ -264,21 +259,15 @@ export default class WorkerFarm extends EventEmitter {
     shared = null;
   }
 
-  init(bundlerOptions: BundlerOptions): void {
-    this.bundlerOptions = bundlerOptions;
-
+  init(): void {
     if (this.shouldStartRemoteWorkers()) {
-      this.persistBundlerOptions();
+      for (let worker of this.workers.values()) {
+        worker.init();
+      }
     }
 
-    this.localWorker.init(bundlerOptions);
+    this.localWorker.init();
     this.startMaxWorkers();
-  }
-
-  persistBundlerOptions(): void {
-    for (let worker of this.workers.values()) {
-      worker.init(this.bundlerOptions);
-    }
   }
 
   startMaxWorkers(): void {
@@ -303,13 +292,8 @@ export default class WorkerFarm extends EventEmitter {
   }
 
   static async getShared(
-    options?: BundlerOptions,
     farmOptions?: $Shape<FarmOptions>
   ): Promise<WorkerFarm> {
-    if (!shared && !options) {
-      throw new Error('Workerfarm should be initialised using options');
-    }
-
     // Farm options shouldn't be considered safe to overwrite
     // and require an entire new instance to be created
     if (
@@ -322,10 +306,7 @@ export default class WorkerFarm extends EventEmitter {
     }
 
     if (!shared) {
-      shared = new WorkerFarm(nullthrows(options), farmOptions);
-    } else if (options) {
-      Object.assign(shared.options, farmOptions);
-      shared.init(options);
+      shared = new WorkerFarm(farmOptions);
     }
 
     return shared;
