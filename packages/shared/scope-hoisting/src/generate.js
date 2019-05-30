@@ -13,5 +13,10 @@ export function generate(bundle: Bundle, ast: AST, options: ParcelOptions) {
     code = `\n${code}\n`;
   }
 
-  return `(function(){${code}})();`;
+  let entryAsset = bundle.getEntryAssets()[0];
+  // $FlowFixMe
+  let interpreter: ?string = entryAsset.meta.interpreter;
+  return `${
+    interpreter != null ? `#!${interpreter}\n` : ''
+  }(function(){${code}})();`;
 }

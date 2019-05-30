@@ -74,20 +74,26 @@ export default new Packager({
       first = false;
     });
 
+    let entryAsset = bundle.getEntryAssets()[0];
+    // $FlowFixMe
+    let interpreter: ?string = entryAsset.meta.interpreter;
+
     return (
-      PRELUDE +
-      '({' +
-      assets +
-      '},{},' +
-      JSON.stringify(
-        bundle
-          .getEntryAssets()
-          .reverse()
-          .map(asset => asset.id)
-      ) +
-      ', ' +
-      'null' +
-      ')'
+      // If the entry asset included a hashbang, repeat it at the top of the bundle
+      (interpreter != null ? `#!${interpreter}\n` : '') +
+      (PRELUDE +
+        '({' +
+        assets +
+        '},{},' +
+        JSON.stringify(
+          bundle
+            .getEntryAssets()
+            .reverse()
+            .map(asset => asset.id)
+        ) +
+        ', ' +
+        'null' +
+        ')')
     );
   }
 });
