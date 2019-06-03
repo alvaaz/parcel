@@ -76,7 +76,9 @@ export default new Packager({
 
     let entryAsset = bundle.getEntryAssets()[0];
     // $FlowFixMe
-    let interpreter: ?string = entryAsset.meta.interpreter;
+    let interpreter: ?string = bundle.target.env.isBrowser()
+      ? null
+      : entryAsset.meta.interpreter;
 
     return (
       // If the entry asset included a hashbang, repeat it at the top of the bundle

@@ -165,9 +165,10 @@ export default class TargetResolver {
           distDir,
           distEntry,
           publicUrl: pkgTargets[targetName]?.publicUrl ?? '/',
-          env: this.getEnvironment(pkgEngines, mainContext).merge(
-            pkgTargets[targetName]
-          )
+          env: this.getEnvironment(
+            pkgEngines,
+            targetName === 'browser' ? 'browser' : mainContext
+          ).merge(pkgTargets[targetName])
         });
       }
     }
